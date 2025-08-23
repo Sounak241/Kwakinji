@@ -37,7 +37,7 @@ class Client(commands.Bot):
                 color=discord.Color.blue()
             )
             embed.set_image(
-                url="https://cdn.discordapp.com/attachments/1317842638774468640/1408821709716455524/kpop-triples.gif"
+                url="https://cdn.discordapp.com/attachments/996799825939005463/1408902538308354191/kpop-triples.gif?ex=68ab6e3d&is=68aa1cbd&hm=c1d10760a5736b3c2c0e55a2e55bab0d396d108356f81c0ae46b808abbc75620&"
             )
             embed.set_footer(text=f"Member #{len(member.guild.members)}")
             await channel.send(embed=embed)
@@ -60,3 +60,4 @@ token = os.getenv("DISCORD_TOKEN")
 if token is None:
     raise ValueError("❌ Bot token not found. Set DISCORD_TOKEN env var.")
 client.run(token)
+
