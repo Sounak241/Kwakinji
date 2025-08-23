@@ -3,16 +3,22 @@ from discord.ext import commands
 from discord import app_commands
 import os
 from dotenv import load_dotenv
+from keep_alive import keep_alive  # Flask keep-alive server
+
+# Load environment variables
 load_dotenv()
-from keep_alive import keep_alive #NEW
 
-keep_alive()
+# Intents
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
 
+# Custom Bot class
 class Client(commands.Bot):
     async def on_ready(self):
         print(f'✅ Logged on as {self.user}!')
         try:
-            guild = discord.Object(id=1379088766265856010)
+            guild = discord.Object(id=1379088766265856010)  # Replace with your guild ID
             synced = await self.tree.sync(guild=guild)
             print(f'Synced {len(synced)} commands to guild {guild.id}')
         except Exception as e:
@@ -37,27 +43,26 @@ class Client(commands.Bot):
                 color=discord.Color.blue()
             )
             embed.set_image(
-                url="https://cdn.discordapp.com/attachments/996799825939005463/1408902538308354191/kpop-triples.gif?ex=68ab6e3d&is=68aa1cbd&hm=c1d10760a5736b3c2c0e55a2e55bab0d396d108356f81c0ae46b808abbc75620&"
+                url="https://cdn.discordapp.com/attachments/996799825939005463/1408902538308354191/kpop-triples.gif"
             )
             embed.set_footer(text=f"Member #{len(member.guild.members)}")
             await channel.send(embed=embed)
 
-# Intents
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
 
-GUILD_ID = discord.Object(id=1379088766265856010)
-
+# Create bot instance
 client = Client(command_prefix="!", intents=intents)
+
+# Slash command example
+GUILD_ID = discord.Object(id=1379088766265856010)
 
 @client.tree.command(name="hello", description="Say hello!", guild=GUILD_ID)
 async def sayHello(interaction: discord.Interaction):
     await interaction.response.send_message("Hi there!")
 
-# Secure token load
-token = os.getenv("DISCORD_TOKEN")
-if token is None:
-    raise ValueError("❌ Bot token not found. Set DISCORD_TOKEN env var.")
-client.run(token)
-
+# Run keep_alive + bot safely
+if __name__ == "__main__":
+    keep_alive()  # start small Flask server for uptime ping
+    token = os.getenv("DISCORD_TOKEN")
+    if token is None:
+        raise ValueError("❌ Bot token not found. Set DISCORD_TOKEN env var.")
+    client.run(token)
