@@ -4,7 +4,9 @@ from discord import app_commands
 import os
 from dotenv import load_dotenv
 load_dotenv()
+from keep_alive import keep_alive #NEW
 
+keep_alive()
 
 class Client(commands.Bot):
     async def on_ready(self):
