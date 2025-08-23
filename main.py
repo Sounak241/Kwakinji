@@ -29,7 +29,7 @@ class Client(commands.Bot):
         await reaction.message.channel.send('You reacted')
 
     async def on_member_join(self, member):
-        channel = self.get_channel(1317842638774468640)  # replace with your channel ID
+        channel = self.get_channel(1379088767004049550)  # replace with your channel ID
         if channel:
             embed = discord.Embed(
                 title="🎉 Welcome!",
