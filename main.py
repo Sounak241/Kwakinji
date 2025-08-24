@@ -32,37 +32,36 @@ class Client(commands.Bot):
             print(f'Error syncing commands: {e}')
 
     # This event runs on every message sent in a channel the bot can see
-    async def on_message(self, message):
+   async def on_message(self, message):
         # Ignore messages sent by the bot itself to prevent loops
         if message.author == self.user:
             return
 
-        # Check for a Twitter/X link in the message content
+        # Regex to find original Twitter/X links
+        twitter_regex = re.compile(r"https?://(?:www\.)?(x\.com|twitter\.com)/(\w+)/status/(\d+)")
         match = twitter_regex.search(message.content)
 
+        # If a link is found, proceed
         if match:
-            print(f"✅ Found Twitter link in message from {message.author.name}")
+            print(f"✅ Found Twitter link from {message.author.name}, creating fixupx link.")
             
-            # Get the original link from the message
             original_link = match.group(0)
 
-            # Replace the domain with "fixupx.com" to generate the embeddable link
+            # --- This is the crucial part ---
+            # Create ONE corrected link by replacing the domain with "fixupx.com"
             fixed_link = original_link.replace("x.com", "fixupx.com").replace("twitter.com", "fixupx.com")
 
-            # Send the new link back to the channel.
-            # Discord will automatically see the link and create an embed.
+            # Send ONLY the single corrected link to the channel
             await message.channel.send(fixed_link)
             
             # Optional: To keep the chat clean, you can delete the user's original message.
             # The bot needs the "Manage Messages" permission for this to work.
             # await message.delete()
 
-            # Stop processing the message to avoid triggering other commands
-            return
+            return # Stop the function here to prevent other commands from running
 
-        # This ensures that other commands (like "!ping") still work
+        # This allows other commands (like "!ping") to still work if no link was found
         await self.process_commands(message)
-
     # This event runs when a new member joins the server
     async def on_member_join(self, member):
         # Replace with your welcome channel ID
@@ -111,3 +110,4 @@ if __name__ == "__main__":
     
     # Run the bot with your token
     client.run(token)
+
