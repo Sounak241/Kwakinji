@@ -66,7 +66,7 @@ class Client(commands.Bot):
             # --- MODIFICATION END ---
             
             # Optional: To keep the chat clean, you can delete the user's original message.
-            # await message.delete()
+            await message.delete()
 
             return # Stop the function here
 
@@ -121,3 +121,4 @@ if __name__ == "__main__":
     
     # Run the bot with your token
     client.run(token)
+
