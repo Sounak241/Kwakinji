@@ -15,7 +15,7 @@ intents.message_content = True
 intents.members = True
 
 # Regex for Twitter links
-twitter_regex = re.compile(r"(https?://)(?:www\.)?twitter\.com/\S+")
+twitter_regex = re.compile(r"(https?://)(?:www\.)?x\.com/\S+")
 
 # Custom Bot class
 class Client(commands.Bot):
@@ -79,3 +79,4 @@ if __name__ == "__main__":
     if token is None:
         raise ValueError("❌ Bot token not found. Set DISCORD_TOKEN env var.")
     client.run(token)
+
