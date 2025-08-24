@@ -4,6 +4,7 @@ from discord import app_commands
 import os
 from dotenv import load_dotenv
 from keep_alive import keep_alive  # Flask keep-alive server
+import re
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +13,9 @@ load_dotenv()
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+
+# Regex for Twitter links
+twitter_regex = re.compile(r"(https?://)(?:www\.)?twitter\.com/\S+")
 
 # Custom Bot class
 class Client(commands.Bot):
@@ -27,8 +31,17 @@ class Client(commands.Bot):
     async def on_message(self, message):
         if message.author == self.user:
             return
+
+        # Twitter link fixer
+        match = twitter_regex.search(message.content)
+        if match:
+            fixed_link = message.content.replace("twitter.com", "vxtwitter.com")
+            await message.reply(f"🔗 Fixed link:\n{fixed_link}")
+
+        # Example text command
         if message.content.startswith('hello'):
             await message.channel.send(f'Hi there {message.author.mention}')
+
         await self.process_commands(message)
 
     async def on_reaction_add(self, reaction, user):
