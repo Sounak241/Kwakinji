@@ -32,12 +32,13 @@ class Client(commands.Bot):
         if message.author == self.user:
             return
 
-        # Twitter link fixer
+        # Twitter/X link fixer
         match = twitter_regex.search(message.content)
         if match:
-            fixed_link = message.content.replace("x.com", "m.fixupx.com")
+            original_link = match.group(0)
+            fixed_link = original_link.replace("x.com", "m.fixupx.com")  # mobile link
 
-            # Try to extract author from the link (between x.com/ and /status)
+            # Extract author from the link
             try:
                 author = fixed_link.split("fixupx.com/")[1].split("/")[0]
             except IndexError:
@@ -46,11 +47,12 @@ class Client(commands.Bot):
             # Create embed
             embed = discord.Embed(
                 title=f"Tweet by @{author}",
-                url=fixed_link,  # makes title clickable
-                description="✅ Click the title above to view the tweet",
+                url=fixed_link,  # clickable
+                description="✅ Click the title to view the tweet on Twitter/X",
                 color=discord.Color.blue()
             )
-            embed.set_footer(text="Twitter link fixed")
+            embed.set_footer(text="Platform: X/Twitter")  # Shows the platform
+            embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/9/9f/X_logo.png")  # optional X logo
 
             await message.channel.send(embed=embed)
 
