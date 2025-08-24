@@ -32,6 +32,7 @@ class Client(commands.Bot):
             print(f'Error syncing commands: {e}')
 
     # This event runs on every message sent in a channel the bot can see
+    # This event runs on every message sent in a channel the bot can see
     async def on_message(self, message):
         # Ignore messages sent by the bot itself to prevent loops
         if message.author == self.user:
@@ -42,24 +43,34 @@ class Client(commands.Bot):
 
         # If a link is found, proceed
         if match:
-            print(f"✅ Found Twitter link from {message.author.name}, creating fixupx link.")
+            print(f"✅ Found Twitter link from {message.author.name}, creating Markdown link.")
             
+            # --- MODIFICATION START ---
+
+            # Extract the username from the link (it's the 2nd captured group)
+            username = match.group(2)
+            
+            # Get the original link
             original_link = match.group(0)
 
-            # --- This is the crucial part ---
-            # Create ONE corrected link by replacing the domain with "fixupx.com"
+            # Create the corrected fixupx.com link
             fixed_link = original_link.replace("x.com", "fixupx.com").replace("twitter.com", "fixupx.com")
 
-            # Send ONLY the single corrected link to the channel
-            await message.channel.send(fixed_link)
+            # Create the final Markdown message string
+            # Format: [Visible Text](URL)
+            markdown_message = f"[Twitter • @{username}]({fixed_link})"
+
+            # Send the new Markdown formatted message
+            await message.channel.send(markdown_message)
+
+            # --- MODIFICATION END ---
             
             # Optional: To keep the chat clean, you can delete the user's original message.
-            # The bot needs the "Manage Messages" permission for this to work.
             # await message.delete()
 
-            return # Stop the function here to prevent other commands from running
+            return # Stop the function here
 
-        # This allows other commands (like "!ping") to still work if no link was found
+        # This allows other commands to still work if no link was found
         await self.process_commands(message)
     
     # This event runs when a new member joins the server
