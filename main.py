@@ -14,7 +14,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-# Regex for Twitter links
+# Regex for Twitter/X links
 twitter_regex = re.compile(r"(https?://)(?:www\.)?x\.com/\S+")
 
 # Custom Bot class
@@ -35,8 +35,24 @@ class Client(commands.Bot):
         # Twitter link fixer
         match = twitter_regex.search(message.content)
         if match:
-            fixed_link = message.content.replace("x.com", "fixupx.com")
-            await message.reply(f"🔗 Fixed link:\n{fixed_link}")
+            fixed_link = message.content.replace("x.com", "m.fixupx.com")
+
+            # Try to extract author from the link (between x.com/ and /status)
+            try:
+                author = fixed_link.split("fixupx.com/")[1].split("/")[0]
+            except IndexError:
+                author = "Unknown"
+
+            # Create embed
+            embed = discord.Embed(
+                title=f"Tweet by @{author}",
+                url=fixed_link,  # makes title clickable
+                description="✅ Click the title above to view the tweet",
+                color=discord.Color.blue()
+            )
+            embed.set_footer(text="Twitter link fixed")
+
+            await message.channel.send(embed=embed)
 
         # Example text command
         if message.content.startswith('hello'):
@@ -79,4 +95,3 @@ if __name__ == "__main__":
     if token is None:
         raise ValueError("❌ Bot token not found. Set DISCORD_TOKEN env var.")
     client.run(token)
-
