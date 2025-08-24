@@ -15,7 +15,7 @@ intents.message_content = True
 intents.members = True
 
 # Regex to find Twitter/X links
-# This now catches both x.com and twitter.com links
+# This catches both x.com and twitter.com links
 twitter_regex = re.compile(r"https?://(?:www\.)?(x\.com|twitter\.com)/(\w+)/status/(\d+)")
 
 # --- Custom Bot Class ---
@@ -25,7 +25,6 @@ class Client(commands.Bot):
         print(f'✅ Logged on as {self.user}!')
         try:
             # Sync commands to a specific guild for instant updates
-            # Replace the ID with your own server's ID if needed
             guild = discord.Object(id=1379088766265856010)
             synced = await self.tree.sync(guild=guild)
             print(f'Synced {len(synced)} commands to guild {guild.id}')
@@ -47,21 +46,21 @@ class Client(commands.Bot):
             # Get the original link from the message
             original_link = match.group(0)
 
-            # Replace the domain with "fxtwitter.com" to generate an embed
-            fixed_link = original_link.replace("x.com", "fxtwitter.com").replace("twitter.com", "fxtwitter.com")
+            # Replace the domain with "fixupx.com" to generate the embeddable link
+            fixed_link = original_link.replace("x.com", "fixupx.com").replace("twitter.com", "fixupx.com")
 
             # Send the new link back to the channel.
-            # Discord will automatically see the link and create the rich embed.
+            # Discord will automatically see the link and create an embed.
             await message.channel.send(fixed_link)
             
-            # Optional: Uncomment the line below to delete the user's original message
+            # Optional: To keep the chat clean, you can delete the user's original message.
             # The bot needs the "Manage Messages" permission for this to work.
             # await message.delete()
 
             # Stop processing the message to avoid triggering other commands
             return
 
-        # This ensures that other commands (like "!hello") still work
+        # This ensures that other commands (like "!ping") still work
         await self.process_commands(message)
 
     # This event runs when a new member joins the server
