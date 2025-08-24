@@ -35,7 +35,7 @@ class Client(commands.Bot):
         # Twitter link fixer
         match = twitter_regex.search(message.content)
         if match:
-            fixed_link = message.content.replace("twitter.com", "vxtwitter.com")
+            fixed_link = message.content.replace("x.com", "fixupx.com")
             await message.reply(f"🔗 Fixed link:\n{fixed_link}")
 
         # Example text command
