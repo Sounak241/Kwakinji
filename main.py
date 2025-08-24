@@ -32,13 +32,12 @@ class Client(commands.Bot):
             print(f'Error syncing commands: {e}')
 
     # This event runs on every message sent in a channel the bot can see
-   async def on_message(self, message):
+    async def on_message(self, message):
         # Ignore messages sent by the bot itself to prevent loops
         if message.author == self.user:
             return
 
         # Regex to find original Twitter/X links
-        twitter_regex = re.compile(r"https?://(?:www\.)?(x\.com|twitter\.com)/(\w+)/status/(\d+)")
         match = twitter_regex.search(message.content)
 
         # If a link is found, proceed
@@ -62,10 +61,11 @@ class Client(commands.Bot):
 
         # This allows other commands (like "!ping") to still work if no link was found
         await self.process_commands(message)
+    
     # This event runs when a new member joins the server
     async def on_member_join(self, member):
         # Replace with your welcome channel ID
-        channel = self.get_channel(1379088767004049550) 
+        channel = self.get_channel(1379088767004049550)
         if channel:
             embed = discord.Embed(
                 title="🎉 Welcome!",
@@ -101,7 +101,7 @@ async def ping(ctx):
 # --- Run the Bot ---
 if __name__ == "__main__":
     # This function is in your keep_alive.py file and is used for hosting
-    keep_alive() 
+    keep_alive()
     
     # Get the bot token from environment variables
     token = os.getenv("DISCORD_TOKEN")
@@ -110,4 +110,3 @@ if __name__ == "__main__":
     
     # Run the bot with your token
     client.run(token)
-
