@@ -1,49 +1,43 @@
-🎵 Discord Music & Social Bot
+# 🎵 Discord Music & Social Bot  
 
-A feature-packed Discord bot built with discord.py
-, combining Spotify integration with social media link fixes and fun utility commands.
+A feature-packed Discord bot built with [discord.py](https://discordpy.readthedocs.io/), combining **Spotify integration** with **social media link fixes** and fun utility commands.  
 
-✨ Features
-🎶 Spotify Integration
+## ✨ Features  
 
-/np or !np → Show what someone is currently listening to on Spotify with:
+### 🎶 Spotify Integration  
+- `/np` or `!np` → Show what someone is currently listening to on Spotify with:  
+  - Song title, artist, album, album art  
+  - Playable Spotify link  
+  - Progress bar + time elapsed  
+- `/setspotify` → Save your Spotify profile link  
+- `/myspotify` → Retrieve your saved Spotify profile  
+- `/removespotify` → Remove your profile link  
 
-Song title, artist, album, album art
+### 🐦 Twitter/X Fixer  
+- Automatically replaces `twitter.com` or `x.com` links with `fixupx.com` links (for better embed previews).  
 
-Playable Spotify link
+### 👋 Utility Commands  
+- `/hello` → Say hello  
+- `/ping` → Check bot latency  
 
-Progress bar + time elapsed
+### 🎉 Welcome System  
+- Greets new members with a custom embed + GIF  
 
-/setspotify → Save your Spotify profile link
+---
 
-/myspotify → Retrieve your saved Spotify profile
+## 🚀 Coming Soon  
+Planned features in development:  
+- 📸 **Instagram embeds**  
+- 📺 **YouTube embeds**  
+- 👽 **Reddit embeds**  
+- 📊 **Spotify top artists & tracks**  
+- 🎤 **Genius lyrics integration**  
 
-/removespotify → Remove your profile link
+---
 
-🐦 Twitter/X Fixer
+## 🛠️ Installation  
 
-Automatically replaces twitter.com or x.com links with fixupx.com links (for better embed previews).
-
-👋 Utility Commands
-
-/hello → Say hello
-
-/ping → Check bot latency
-
-🎉 Welcome System
-
-Greets new members with a custom embed + GIF
-
-🚀 Coming Soon
-
-Planned features in development:
-
-📸 Instagram embeds
-
-📺 YouTube embeds
-
-👽 Reddit embeds
-
-📊 Spotify top artists & tracks
-
-🎤 Genius lyrics integration
+1. **Clone the repo**  
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+   cd YOUR_REPO
