@@ -1,84 +1,12 @@
-name: Professional Discord Notification
-
-on:
-  push:
-  pull_request:
-    types: [opened, closed, reopened]
-  issues:
-    types: [opened, closed, reopened]
-
+name: Discord Notification
+on: [push]
 jobs:
-  discord-notification:
+  build:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Prepare all dynamic variables and message content in one place
-      - name: Prepare Discord Message
-        id: prepare_message # Give the step an ID to reference its outputs
-        run: |
-          # Default values for status
-          if [[ "${{ job.status }}" == "success" ]]; then
-            DISCORD_COLOR="28a745" # Green
-            DISCORD_STATUS_MESSAGE="Succeeded"
-          else
-            DISCORD_COLOR="dc3545" # Red
-            DISCORD_STATUS_MESSAGE="Failed"
-          fi
-
-          # Logic for PUSH event
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            TITLE="[${{ github.repository }}] New push to ${{ github.ref_name }}"
-            # Format up to 5 commit messages into a clean list
-            COMMITS_LIST=$(jq -r '.[] | " • `\(.id[0:7])` \(.message | sub("\n.*"; "...")) - \(.author.name)"' <<< '${{ toJSON(github.event.commits) }}' | head -n 5)
-            DESCRIPTION="**[Compare Changes](${{ github.event.compare }})**\n\n**Commits:**\n${COMMITS_LIST}"
-          
-          # Logic for PULL REQUEST event
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PR_ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-            TITLE="[${{ github.repository }}] Pull Request #${{ github.event.pull_request.number }} ${PR_ACTION}"
-            DESCRIPTION="**[${{ github.event.pull_request.title }}](${{ github.event.pull_request.html_url }})**"
-            # Override color for merged PRs
-            if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
-              DISCORD_COLOR="8957e5" # Purple
-              TITLE="[${{ github.repository }}] Pull Request #${{ github.event.pull_request.number }} merged"
-            fi
-
-          # Logic for ISSUE event
-          elif [[ "${{ github.event_name }}" == "issues" ]]; then
-            ISSUE_ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-            TITLE="[${{ github.repository }}] Issue #${{ github.event.issue.number }} ${ISSUE_ACTION}"
-            DESCRIPTION="**[${{ github.event.issue.title }}](${{ github.event.issue.html_url }})**"
-          
-          # Fallback for any other event
-          else
-            TITLE="Workflow [${{ github.workflow }}] ${DISCORD_STATUS_MESSAGE}"
-            DESCRIPTION="A workflow was triggered by the event: **${{ github.event_name }}**."
-          fi
-          
-          # --- DEBUGGING ---
-          # These lines will print the final values to the workflow log
-          echo "DEBUG: Title is: $TITLE"
-          echo "DEBUG: Status is: $DISCORD_STATUS_MESSAGE"
-          echo "DEBUG: Color is: $DISCORD_COLOR"
-          echo "DEBUG: Description is: $DESCRIPTION"
-          # --- END DEBUGGING ---
-          
-          # Set outputs for the next step
-          echo "title=${TITLE}" >> $GITHUB_OUTPUT
-          echo "description=${DESCRIPTION}" >> $GITHUB_OUTPUT
-          echo "color=${DISCORD_COLOR}" >> $GITHUB_OUTPUT
-          echo "status_message=${DISCORD_STATUS_MESSAGE}" >> $GITHUB_OUTPUT
-
-      # Step 2: Send the notification using the outputs from the previous step
-      - name: Send Discord Notification
+      - uses: actions/checkout@v2
+      - name: Discord Webhook Action
         uses: sarisia/actions-status-discord@v1
         if: always()
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          status: ${{ steps.prepare_message.outputs.status_message }}
-          title: ${{ steps.prepare_message.outputs.title }}
-          description: ${{ steps.prepare_message.outputs.description }}
-          color: ${{ steps.prepare_message.outputs.color }}
-          username: "GitHub Actions"
-          avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-          footer: "Triggered by @${{ github.actor }} | Event: ${{ github.event_name }}"
-          timestamp: true
