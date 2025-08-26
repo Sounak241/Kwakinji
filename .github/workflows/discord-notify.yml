@@ -1,12 +1,81 @@
-name: Discord Notification
-on: [push]
+name: Professional Discord Notification
+
+# Triggers on pushes, opening/closing pull requests, and opening/closing issues
+on:
+  push:
+  pull_request:
+    types: [opened, closed, reopened]
+  issues:
+    types: [opened, closed, reopened]
+
 jobs:
-  build:
+  discord-notify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Discord Webhook Action
+      # Step 1: Set up dynamic variables based on job status (success/failure)
+      - name: Set Status Color and Title
+        if: always() # This step always runs, regardless of job status
+        run: |
+          if [[ "${{ job.status }}" == "success" ]]; then
+            echo "DISCORD_COLOR=28a745" >> $GITHUB_ENV # Green
+            echo "DISCORD_STATUS_MESSAGE=Succeeded" >> $GITHUB_ENV
+          else
+            echo "DISCORD_COLOR=dc3545" >> $GITHUB_ENV # Red
+            echo "DISCORD_STATUS_MESSAGE=Failed" >> $GITHUB_ENV
+          fi
+
+      # Step 2: Format the message description for PUSH events
+      - name: Format Push Message
+        if: github.event_name == 'push'
+        run: |
+          # Compare URL for the push
+          compare_url="${{ github.event.compare }}"
+          # Format commit messages into a clean list
+          commits_list=$(jq -r '.[] | " • `\(.id[0:7])` \(.message) - \(.author.name)"' <<< '${{ toJSON(github.event.commits) }}')
+          
+          echo "DISCORD_TITLE=[${{ github.repository }}] New push to ${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "DISCORD_DESCRIPTION=**[Compare Changes]($compare_url)**\n\n**Commits:**\n${commits_list}" >> $GITHUB_ENV
+
+      # Step 3: Format the message for PULL REQUEST events
+      - name: Format Pull Request Message
+        if: github.event_name == 'pull_request'
+        run: |
+          pr_title="${{ github.event.pull_request.title }}"
+          pr_url="${{ github.event.pull_request.html_url }}"
+          pr_number="${{ github.event.pull_request.number }}"
+          pr_action="${{ github.event.action }}" # e.g., "opened", "closed"
+          
+          echo "DISCORD_TITLE=[${{ github.repository }}] Pull Request #${pr_number} ${pr_action}" >> $GITHUB_ENV
+          echo "DISCORD_DESCRIPTION=**[$pr_title]($pr_url)**" >> $GITHUB_ENV
+          
+          # Adjust color for merged PRs
+          if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            echo "DISCORD_COLOR=8957e5" >> $GITHUB_ENV # Purple for merged
+          fi
+
+      # Step 4: Format the message for ISSUE events
+      - name: Format Issue Message
+        if: github.event_name == 'issues'
+        run: |
+          issue_title="${{ github.event.issue.title }}"
+          issue_url="${{ github.event.issue.html_url }}"
+          issue_number="${{ github.event.issue.number }}"
+          issue_action="${{ github.event.action }}" # e.g., "opened", "closed"
+          
+          echo "DISCORD_TITLE=[${{ github.repository }}] Issue #${issue_number} ${issue_action}" >> $GITHUB_ENV
+          echo "DISCORD_DESCRIPTION=**[$issue_title]($issue_url)**" >> $GITHUB_ENV
+
+      # Step 5: Send the final, formatted notification
+      - name: Send Discord Notification
         uses: sarisia/actions-status-discord@v1
-        if: always()
+        if: always() # Ensures notification is sent even if the job fails
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ env.DISCORD_STATUS_MESSAGE }}
+          title: ${{ env.DISCORD_TITLE }}
+          description: ${{ env.DISCORD_DESCRIPTION }}
+          color: ${{ env.DISCORD_COLOR }}
+          username: "GitHub Actions" # Custom bot name
+          avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+          footer: "Triggered by @${{ github.actor }} | Event: ${{ github.event_name }}"
+          timestamp: true
