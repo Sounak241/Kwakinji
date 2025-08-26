@@ -1,0 +1,28 @@
+name: Discord Notification
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Notify Discord about workflow status
+        uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          content: ""
+          title: "[${{ github.repository }}:${{ github.ref_name }}] ${{ github.event.head_commit.message }}"
+          description: "${{ github.actor }} committed to the repository"
+          url: "https://github.com/${{ github.repository }}/commit/${{ github.event.head_commit.id }}"
+          username: "${{ github.actor }}"
+          avatar_url: "${{ github.event.head_commit.author.avatar_url || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png' }}"
+          color: ${{ job.status == 'success' && '0x2ea44f' || job.status == 'failure' && '0xda3633' || '0x6e6e6e' }}"
+          footer: "Branch: ${{ github.ref_name }} | Commit: ${{ github.event.head_commit.id.substring(0,7) }}"
