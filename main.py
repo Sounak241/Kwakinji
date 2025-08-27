@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import discord
 from discord.ext import commands
 import os
@@ -756,4 +755,3 @@ if __name__ == "__main__":
     if not token:
         raise ValueError("❌ Bot token not found. Set the DISCORD_TOKEN environment variable.")
     client.run(token)
->>>>>>> 3d47149e842d3b694a1328ce4575c6dae81ffacc
