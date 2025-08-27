@@ -24,15 +24,16 @@ intents.members = True
 intents.presences = True  # Required for Spotify presence
 
 # -----------------------------
-# Twitter/X regex
+# Twitter/X, Instagram, Reddit regex
 # -----------------------------
 twitter_regex = re.compile(r"https?://(?:www\.)?(x\.com|twitter\.com)/(\w+)/status/(\d+)")
+instagram_regex = re.compile(r"(https?://(www\.)?instagram\.com/\S+)")
+reddit_regex = re.compile(r"(https?://(www\.)?reddit\.com/\S+)")
 
 # -----------------------------
 # Spotify profile storage
 # -----------------------------
 SPOTIFY_FILE = "spotify_profiles.json"
-
 if os.path.exists(SPOTIFY_FILE):
     with open(SPOTIFY_FILE, "r") as f:
         spotify_profiles = json.load(f)
@@ -67,13 +68,12 @@ def get_spotify_token():
     return SPOTIFY_TOKEN
 
 def get_artist_from_track(track_id):
-    """Get exact artist name and Spotify URL from track ID"""
     token = get_spotify_token()
     headers = {"Authorization": f"Bearer {token}"}
     r = requests.get(f"https://api.spotify.com/v1/tracks/{track_id}", headers=headers)
     r.raise_for_status()
     res = r.json()
-    artist = res['artists'][0]  # main artist
+    artist = res['artists'][0]
     return artist['name'], artist['external_urls']['spotify']
 
 # -----------------------------
@@ -89,22 +89,67 @@ class Client(commands.Bot):
         except Exception as e:
             print(f'Error syncing commands: {e}')
 
+    # MOVED on_message INSIDE the Client class
     async def on_message(self, message):
-        if message.author == self.user:
+        # Ignore messages from self or other bots
+        if message.author == self.user or message.author.bot:
             return
 
-        match = twitter_regex.search(message.content)
-        if match:
-            username = match.group(2)
-            original_link = match.group(0)
+        # Check if message content is empty, which can indicate an intent issue
+        if not message.content:
+            return
+
+        print(f"DEBUG: Reading message from {message.author}: '{message.content}'")
+
+        # --- Link processing ---
+        link_found = False
+        markdown_message = ""
+        
+        # Twitter/X
+        twitter_match = twitter_regex.search(message.content)
+        if twitter_match:
+            link_found = True
+            username = twitter_match.group(2)
+            original_link = twitter_match.group(0)
             fixed_link = original_link.replace("x.com", "fixupx.com").replace("twitter.com", "fixupx.com")
             markdown_message = f"[Twitter • @{username}]({fixed_link})"
-            await message.channel.send(markdown_message)
-            await message.delete()
+
+        # Instagram
+        insta_match = instagram_regex.search(message.content)
+        if not link_found and insta_match:
+            link_found = True
+            original_link = insta_match.group(1)
+            clean_link = original_link.split("?")[0]
+            fixed_link = clean_link.replace("instagram.com", "instagramez.com")
+            markdown_message = f"[Instagram]({fixed_link})"
+
+        # Reddit
+        reddit_match = reddit_regex.search(message.content)
+        if not link_found and reddit_match:
+            link_found = True
+            original_link = reddit_match.group(1)
+            fixed_link = original_link.replace("reddit.com", "rxddit.com")
+            markdown_message = f"[Reddit]({fixed_link})"
+
+        # --- Action Phase ---
+        if link_found:
+            print(f"DEBUG: Found link. Preparing to fix and reply.")
+            try:
+                await message.edit(suppress=True)
+                print(f"DEBUG: Successfully suppressed embed for message {message.id}")
+            except discord.Forbidden:
+                print(f"ERROR: No permission to suppress embeds in channel '{message.channel.name}'. Check 'Manage Messages' permission.")
+            except discord.NotFound:
+                print(f"ERROR: Could not find the message {message.id} to edit.")
+            except Exception as e:
+                print(f"ERROR: An unexpected error occurred while trying to edit message: {e}")
+
+            await message.reply(markdown_message, mention_author=False)
             return
 
+        # If no link was found, process other commands
         await self.process_commands(message)
-    
+
     async def on_member_join(self, member):
         channel = self.get_channel(1379088767004049550)
         if channel:
@@ -122,11 +167,11 @@ class Client(commands.Bot):
 # -----------------------------
 # Bot Setup
 # -----------------------------
-client = Client(command_prefix="!", intents=intents)
+client = Client(command_prefix="!", intents=intents, help_command=None)
 GUILD_ID = discord.Object(id=1379088766265856010)
 
 # -----------------------------
-# Helper function for Spotify NP
+# Spotify NP helpers
 # -----------------------------
 def create_progress_bar(progress, duration, length=10):
     filled_blocks = int(progress / duration * length)
@@ -143,14 +188,11 @@ async def generate_np_embed(member):
 
             artist_name, artist_url = get_artist_from_track(activity.track_id)
 
-            # Progress calculation
             progress = (discord.utils.utcnow() - activity.start).total_seconds()
             duration = (activity.end - activity.start).total_seconds()
 
-            # Progress bar
             progress_bar = create_progress_bar(progress, duration)
 
-            # Timestamps
             progress_time = f"{int(progress)//60}:{int(progress)%60:02d}"
             duration_time = f"{int(duration)//60}:{int(duration)%60:02d}"
             timestamps = f"`{progress_time}/{duration_time}`"
@@ -169,11 +211,9 @@ async def generate_np_embed(member):
             return embed
     return None
 
-
 # -----------------------------
-# Commands (text & slash)
+# Commands
 # -----------------------------
-# Hello
 @client.command()
 async def hello(ctx):
     await ctx.send("Hi there!")
@@ -182,7 +222,6 @@ async def hello(ctx):
 async def hello_slash(interaction: discord.Interaction):
     await interaction.response.send_message("Hi there!")
 
-# Ping
 @client.command()
 async def ping(ctx):
     await ctx.send(f"Pong! Latency is {round(client.latency * 1000)}ms")
@@ -191,7 +230,7 @@ async def ping(ctx):
 async def ping_slash(interaction: discord.Interaction):
     await interaction.response.send_message(f"Pong! Latency is {round(client.latency * 1000)}ms")
 
-# Spotify profile commands
+# --- Spotify commands ---
 @client.command(name="setspotify")
 async def set_spotify(ctx, link: str):
     if not link.startswith("https://open.spotify.com/user/"):
@@ -276,6 +315,60 @@ async def now_playing_slash(interaction: discord.Interaction, member: Optional[d
         await interaction.response.send_message(f"❌ {member.display_name} is not listening to Spotify right now.", ephemeral=True)
 
 # -----------------------------
+# Custom Help Command
+# -----------------------------
+client.remove_command("help")
+
+@client.command(name="help")
+async def help_command(ctx):
+    embed = discord.Embed(
+        title="🤖 Bot Help — Commands",
+        description="Here are all the commands you can use:",
+        color=discord.Color.green()
+    )
+
+    embed.add_field(name="👋 Hello", value="`!hello` or `/hello` — Say hello to the bot.", inline=False)
+    embed.add_field(name="🏓 Ping", value="`!ping` or `/ping` — Check the bot latency.", inline=False)
+    embed.add_field(
+        name="🎵 Spotify Profiles",
+        value=(
+            "`!setspotify <link>` or `/setspotify <link>` — Save your Spotify profile.\n"
+            "`!removespotify` or `/removespotify` — Remove your saved profile.\n"
+            "`!myspotify` or `/myspotify` — Show your saved profile."
+        ),
+        inline=False
+    )
+    embed.add_field(name="🎶 Now Playing", value="`!np [@member]` or `/np [member]` — Show what you or someone else is listening to on Spotify.", inline=False)
+    embed.add_field(name="🔗 Twitter/X", value="Posting a Twitter/X link will automatically be converted to a fixupx.com link.", inline=False)
+    embed.add_field(name="🎉 Welcome", value="New members get an automatic welcome embed in the welcome channel.", inline=False)
+    embed.set_footer(text="Use the slash (/) versions for cleaner interactions!")
+    await ctx.send(embed=embed)
+
+@client.tree.command(name="help", description="Show the help menu", guild=GUILD_ID)
+async def help_slash(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="🤖 Bot Help — Commands",
+        description="Here are all the commands you can use:",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="👋 Hello", value="`/hello` or `!hello` — Say hello to the bot.", inline=False)
+    embed.add_field(name="🏓 Ping", value="`/ping` or `!ping` — Check the bot latency.", inline=False)
+    embed.add_field(
+        name="🎵 Spotify Profiles",
+        value=(
+            "`/setspotify <link>` or `!setspotify <link>` — Save your Spotify profile.\n"
+            "`/removespotify` or `/removespotify` — Remove your saved profile.\n"
+            "`/myspotify` or `!myspotify` — Show your saved profile."
+        ),
+        inline=False
+    )
+    embed.add_field(name="🎶 Now Playing", value="`/np [member]` or `!np [@member]` — Show what you or someone else is listening to on Spotify.", inline=False)
+    embed.add_field(name="🔗 Twitter/X", value="Posting a Twitter/X link will automatically be converted to a fixupx.com link.", inline=False)
+    embed.add_field(name="🎉 Welcome", value="New members get an automatic welcome embed in the welcome channel.", inline=False)
+    embed.set_footer(text="Use the slash (/) versions for cleaner interactions!")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+# -----------------------------
 # Run the Bot
 # -----------------------------
 if __name__ == "__main__":
@@ -284,5 +377,3 @@ if __name__ == "__main__":
     if not token:
         raise ValueError("❌ Bot token not found. Set the DISCORD_TOKEN environment variable.")
     client.run(token)
-
-
