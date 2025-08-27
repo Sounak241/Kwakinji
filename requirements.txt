@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 discord.py
 python-dotenv
 flask
 requests
 supabase
+=======
+discord.py
+python-dotenv
+flask
+requests
+>>>>>>> 3d47149e842d3b694a1328ce4575c6dae81ffacc

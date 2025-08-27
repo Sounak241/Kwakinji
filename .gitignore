@@ -1,1 +1,8 @@
+# Environment variables
 .env
+
+# Python cache files
+__pycache__/
+
+# Old data file (no longer needed)
+spotify_profiles.json
