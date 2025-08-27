@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from flask import Flask
 from threading import Thread
 
@@ -28,5 +27,4 @@ def run():
 
 def keep_alive():
     t = Thread(target=run)
->>>>>>> 3d47149e842d3b694a1328ce4575c6dae81ffacc
     t.start()
