@@ -85,7 +85,8 @@ class Client(commands.Bot):
             print(f'Synced {len(synced)} commands to guild {guild.id}')
         except Exception as e:
             print(f'Error syncing commands: {e}')
-
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="tripleS - Are you Alive"))
+        
     async def on_message(self, message):
         if message.author == self.user or message.author.bot:
             return
