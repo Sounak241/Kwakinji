@@ -13,7 +13,6 @@ from discord import Embed, Color, Member
 import io
 from moviepy.editor import VideoFileClip, ImageSequenceClip
 from PIL import Image,ImageSequence
-import subprocess
 import asyncio
 import aiohttp
 
