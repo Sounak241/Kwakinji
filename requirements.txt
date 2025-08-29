@@ -14,7 +14,7 @@ requests
 supabase
 
 # For video and audio editing (used for GIF conversion)
-moviepy
+moviepy==1.0.3
 
 # Python Imaging Library (fork) for image processing
 Pillow
