@@ -1,6 +1,6 @@
 discord.py==2.6.2
 python-dotenv==1.0.1
-flask==2.3.5
+flask==2.3.3
 requests==2.31.0
 supabase==2.3.2
 pillow==10.0.0
