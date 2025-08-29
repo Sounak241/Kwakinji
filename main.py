@@ -9,6 +9,14 @@ import base64
 import time
 from typing import Optional
 from supabase import create_client, Client as SupabaseClient
+from discord import Embed, Color, Member
+import io
+from moviepy.editor import VideoFileClip, ImageSequenceClip
+from PIL import Image,ImageSequence
+import subprocess
+import cloudconvert
+import asyncio
+import aiohttp
 
 # -----------------------------
 # Load environment variables
@@ -203,6 +211,120 @@ async def generate_np_embed(member):
             return embed
     return None
 
+
+# Badge emojis for visual flair
+BADGE_EMOJIS = {
+    "Discord Staff": "🛡️",
+    "Partnered Server Owner": "🤝",
+    "Bug Hunter": "🐛",
+    "HypeSquad Bravery": "🦁",
+    "HypeSquad Brilliance": "💡",
+    "HypeSquad Balance": "⚖️",
+    "Early Supporter": "🌟",
+    "Verified Bot": "🤖",
+    "Early Verified Bot Developer": "👨‍💻"
+}
+
+def get_user_badges(member: Member):
+    badges = []
+    flags = member.public_flags
+
+    # Use getattr to avoid AttributeErrors if flag doesn't exist
+    if getattr(flags, "staff", False): badges.append("Discord Staff")
+    if getattr(flags, "partner", False): badges.append("Partnered Server Owner")
+    if getattr(flags, "bug_hunter", False): badges.append("Bug Hunter")
+    if getattr(flags, "hypesquad_bravery", False): badges.append("HypeSquad Bravery")
+    if getattr(flags, "hypesquad_brilliance", False): badges.append("HypeSquad Brilliance")
+    if getattr(flags, "hypesquad_balance", False): badges.append("HypeSquad Balance")
+    if getattr(flags, "early_supporter", False): badges.append("Early Supporter")
+    if getattr(flags, "verified_bot", False): badges.append("Verified Bot")
+    if getattr(flags, "verified_developer", False): badges.append("Early Verified Bot Developer")
+
+    return badges if badges else ["None"]
+
+async def fetch_assets_embed(member: Member) -> Embed:
+    embed = Embed(
+        title=f"✨ Profile Assets — {member.display_name}",
+        color=Color.blurple()
+    )
+    embed.set_thumbnail(url=member.display_avatar.url)
+
+    # Avatar Decoration (simulate using top role color)
+    deco_color = member.top_role.color if member.top_role.name != "@everyone" else Color.default()
+    embed.add_field(name="Avatar Decoration", value=f"Role Color: {deco_color}", inline=False)
+
+    # Profile Effects (simulated using badges)
+    badges = get_user_badges(member)
+    badge_display = " ".join([BADGE_EMOJIS.get(b, b) for b in badges])
+    embed.add_field(name="HypeSquad House", value=badge_display, inline=False)
+
+    # Nameplate (simulated using top role name)
+    nameplate = member.top_role.name if member.top_role.name != "@everyone" else "No Pronouns"
+    embed.add_field(name="Pronouns", value=nameplate, inline=False)
+
+    # Roles
+    roles = [r.mention for r in member.roles if r.name != "@everyone"]
+    embed.add_field(name="Roles", value=", ".join(roles) if roles else "None", inline=False)
+
+    # Account creation date
+    embed.add_field(name="Account Created", value=member.created_at.strftime("%d %b %Y, %H:%M:%S UTC"), inline=False)
+
+    return embed
+
+
+import ffmpeg
+import os
+from PIL import Image, ImageSequence
+import asyncio
+
+MAX_SIZE = 25 * 1024 * 1024  # 25MB limit
+
+async def compress_gif_until_fit(input_path: str, max_attempts: int = 10) -> str:
+    """Compress GIF iteratively until it fits Discord's limit."""
+    loop = asyncio.get_event_loop()
+    current_path = input_path
+
+    for attempt in range(max_attempts):
+        if os.path.getsize(current_path) <= MAX_SIZE:
+            return current_path
+
+        base, ext = os.path.splitext(current_path)
+        if base.endswith("_compressed"):
+            base = base.rsplit("_compressed", 1)[0]
+        output_path = f"{base}_compressed.gif"
+
+        success = await loop.run_in_executor(None, compress_gif_sync, current_path, output_path, 0.85)
+        if not success:
+            break
+
+        if current_path != input_path:
+            os.remove(current_path)
+        current_path = output_path
+
+    return current_path
+
+
+def compress_gif_sync(input_path: str, output_path: str, scale_factor: float) -> bool:
+    """Sync helper for compressing GIF."""
+    try:
+        with Image.open(input_path) as img:
+            frames = []
+            duration = img.info.get('duration', 100)
+            loop_val = img.info.get('loop', 0)
+            for frame in ImageSequence.Iterator(img):
+                frame = frame.convert("RGBA")
+                new_size = (int(frame.width * scale_factor), int(frame.height * scale_factor))
+                frames.append(frame.resize(new_size, Image.Resampling.LANCZOS))
+            frames[0].save(output_path, save_all=True, append_images=frames[1:], optimize=True,
+                           duration=duration, loop=loop_val, disposal=2)
+        return True
+    except Exception as e:
+        print(f"Error compressing GIF: {e}")
+        return False
+
+
+
+
 # -----------------------------
 # Commands
 # -----------------------------
@@ -366,6 +488,131 @@ async def help_slash(interaction: discord.Interaction):
     embed.add_field(name="🔗 Link Fixer", value="Posting Twitter/X, Instagram, or Reddit links will automatically be fixed.", inline=False)
     embed.set_footer(text="Use the slash (/) versions for cleaner interactions!")
     await interaction.response.send_message(embed=embed, ephemeral=True)
+# -----------------------------
+# Assets Command
+# -----------------------------    
+@client.command(name="profile")
+async def assets(ctx, member: Optional[discord.Member] = None):
+    if member is None:
+        member = ctx.author
+    embed = await fetch_assets_embed(member)
+    await ctx.send(embed=embed)
+
+@client.tree.command(
+    name="profile",
+    description="Show a user's Discord profile with badges, roles, and simulated effects",
+    guild=GUILD_ID
+)
+async def assets_slash(interaction: discord.Interaction, member: Optional[discord.Member] = None):
+    if member is None:
+        member = interaction.guild.get_member(interaction.user.id)
+    embed = await fetch_assets_embed(member)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+import discord
+from discord.ext import commands
+from discord import app_commands
+import os
+from moviepy.editor import VideoFileClip
+from PIL import Image
+
+# -----------------------------
+# !gif Command (prefix)
+# -----------------------------
+@client.command(name="gif")
+async def gif_prefix(ctx):
+    if not ctx.message.attachments:
+        await ctx.send("❌ Please attach a video or image to convert.")
+        return
+
+    attachment = ctx.message.attachments[0]
+    processing_msg = await ctx.send("⏳ Processing your file, please wait...")
+
+    base_path = f"./{ctx.author.id}_{attachment.filename}"
+    output_path = f"./{ctx.author.id}_output.gif"
+
+    try:
+        await attachment.save(base_path)
+
+        if attachment.content_type and attachment.content_type.startswith('video'):
+            # Use ffmpeg to convert video to GIF with scale + fps
+            ffmpeg.input(base_path).output(
+                output_path, vf="fps=15,scale=320:-1:flags=lanczos"
+            ).run(overwrite_output=True, capture_stdout=True, capture_stderr=True)
+        elif attachment.content_type and attachment.content_type.startswith('image'):
+            with Image.open(base_path) as img:
+                img.save(output_path, save_all=True, duration=200, loop=0)
+        else:
+            await processing_msg.edit(content="❌ Unsupported file type.")
+            return
+
+        # Compress GIF iteratively
+        final_path = await compress_gif_until_fit(output_path)
+
+        if os.path.getsize(final_path) > MAX_SIZE:
+            await processing_msg.edit(content="❌ The final GIF is still too large to upload to Discord.")
+        else:
+            await processing_msg.delete()
+            await ctx.send(file=discord.File(final_path))
+
+    except Exception as e:
+        try:
+            await processing_msg.edit(content=f"❌ An error occurred: {e}")
+        except discord.NotFound:
+            await ctx.send(f"❌ An error occurred: {e}")
+
+    finally:
+        # Cleanup all temp files
+        for path in [base_path, output_path, final_path]:
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    print(f"Cleanup error: {e}")
+
+
+
+# -----------------------------
+# /gif Command (slash)
+# -----------------------------
+@client.tree.command(name="gif", description="Convert an image or video to GIF", guild=GUILD_ID)
+async def gif_slash(interaction: discord.Interaction, file: discord.Attachment):
+    await interaction.response.defer()
+    base_path = f"./{interaction.user.id}_{file.filename}"
+    output_path = f"./{interaction.user.id}_output.gif"
+
+    try:
+        await file.save(base_path)
+
+        if file.content_type.startswith('video'):
+            ffmpeg.input(base_path).output(
+                output_path, vf="fps=15,scale=320:-1:flags=lanczos"
+            ).run(overwrite_output=True, capture_stdout=True, capture_stderr=True)
+        elif file.content_type.startswith('image'):
+            with Image.open(base_path) as img:
+                img.save(output_path, save_all=True, duration=200, loop=0)
+        else:
+            await interaction.edit_original_response(content="❌ Unsupported file type.")
+            return
+
+        final_path = await compress_gif_until_fit(output_path)
+
+        if os.path.getsize(final_path) > MAX_SIZE:
+            await interaction.edit_original_response(content="❌ The final GIF is still too large to upload to Discord.")
+        else:
+            await interaction.edit_original_response(content=None, attachments=[discord.File(final_path)])
+
+    except Exception as e:
+        await interaction.edit_original_response(content=f"❌ An error occurred: {e}")
+
+    finally:
+        for path in [base_path, output_path, final_path]:
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    print(f"Cleanup error: {e}")
+
 
 # -----------------------------
 # Run the Bot
