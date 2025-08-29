@@ -1,13 +1,26 @@
-discord.py==2.6.2
-python-dotenv==1.0.1
-aiohttp==3.9.5
-flask==2.3.3
-requests==2.31.0
-supabase==2.3.2
-pillow==10.0.0
-moviepy==2.0.0
-imageio-ffmpeg==0.4.10
-ffmpeg-python==0.2.0
-cloudconvert==2.1.1
-setuptools>=68.0.0
-wheel>=0.40.0
+# Web framework
+Flask
+
+# Discord API wrapper
+discord.py
+
+# For loading environment variables from a .env file
+python-dotenv
+
+# For making HTTP requests
+requests
+
+# Supabase database client
+supabase
+
+# For video and audio editing (used for GIF conversion)
+moviepy
+
+# Python Imaging Library (fork) for image processing
+Pillow
+
+# For asynchronous HTTP requests
+aiohttp
+
+# Python wrapper for FFmpeg
+ffmpeg-python
