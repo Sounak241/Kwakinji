@@ -119,7 +119,7 @@ class Client(commands.Bot):
             link_found = True
             original_link = insta_match.group(1)
             clean_link = original_link.split("?")[0]
-            fixed_link = clean_link.replace("instagram.com", "g.embedez.com")
+            fixed_link = clean_link.replace("instagram.com", "kkinstagram.com")
             markdown_message = f"[Instagram]({fixed_link})"
 
         reddit_match = reddit_regex.search(message.content)
