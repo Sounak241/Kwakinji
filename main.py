@@ -30,11 +30,13 @@ intents.members = True
 intents.presences = True  # Required for Spotify presence
 
 # -----------------------------
-# Twitter/X, Instagram, Reddit regex
+# Twitter/X, Instagram, Reddit and Tiktok regex
 # -----------------------------
 twitter_regex = re.compile(r"https?://(?:www\.)?(x\.com|twitter\.com)/(\w+)/status/(\d+)")
 instagram_regex = re.compile(r"(https?://(www\.)?instagram\.com/\S+)")
 reddit_regex = re.compile(r"(https?://(www\.)?reddit\.com/\S+)")
+tiktok_regex = re.compile(r"https?://(?:www\.)?tiktok\.com/\S+")
+
 
 # -----------------------------
 # Supabase setup
@@ -128,6 +130,13 @@ class Client(commands.Bot):
             original_link = reddit_match.group(1)
             fixed_link = original_link.replace("reddit.com", "rxddit.com")
             markdown_message = f"[Reddit]({fixed_link})"
+
+        tiktok_match = tiktok_regex.search(message.content)
+        if not link_found and tiktok_match:
+            link_found = True
+            original_link = tiktok_match.group(0)
+            fixed_link = original_link.replace("tiktok.com", "tnktok.com")
+            markdown_message = f"[TikTok]({fixed_link})"
 
         # --- Action Phase ---
         if link_found:
