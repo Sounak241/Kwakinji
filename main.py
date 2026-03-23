@@ -626,7 +626,17 @@ async def gif_slash(interaction: discord.Interaction, file: discord.Attachment):
 # -----------------------------
 if __name__ == "__main__":
     keep_alive()
+
     token = os.getenv("DISCORD_TOKEN")
+    print("TOKEN LOADED:", bool(token))  # Debug check
+
     if not token:
-        raise ValueError("❌ Bot token not found. Set the DISCORD_TOKEN environment variable.")
-    client.run(token)
+        print("❌ Bot token not found. Set the DISCORD_TOKEN environment variable.")
+        exit(1)
+
+    try:
+        client.run(token)
+    except Exception as e:
+        print("BOT CRASHED:", e)
+        import time
+        time.sleep(5)  # Prevent rapid restart loop
